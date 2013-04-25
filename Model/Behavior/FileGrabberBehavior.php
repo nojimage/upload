@@ -1,20 +1,21 @@
 <?php
 App::uses('UploadBehavior', 'Upload.Model/Behavior');
-App::uses('HttpSocket', 'Utility');
+App::uses('HttpSocket', 'Network/Http');
 
 class FileGrabberBehavior extends UploadBehavior {
 
 /**
  * Download remote file into PHP's TMP dir
  */
-	function _grab(Model $model, $field, $uri) {
+	protected function _grab(Model $model, $field, $uri) {
 
 		$socket = new HttpSocket();
 		$socket->get($uri);
 		$headers = $socket->response['header'];
 		$file_name = basename($socket->request['uri']['path']);
 		$tmp_file = sys_get_temp_dir() . '/' . $file_name;
-		if (!$socket->response['status']['code'] != 200) {
+
+		if ($socket->response['status']['code'] != 200) {
 			return false;
 		}
 
@@ -39,7 +40,7 @@ class FileGrabberBehavior extends UploadBehavior {
  * Transform Model.field value like as PHP upload array (name, tmp_name)
  * for UploadBehavior plugin processing.
  */
-	function beforeValidate(Model $model) {
+	public function beforeValidate(Model $model) {
 		foreach($this->settings[$model->alias] as $field => $options) {
 			$uri = $model->data[$model->alias][$field];
 			if (!$this->_grab($model, $field, $uri)) {
