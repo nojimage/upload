@@ -51,8 +51,8 @@ class FileGrabberBehavior extends UploadBehavior {
 		return true;
 	}
 
-	function handleUploadedFile($modelAlias, $field, $tmp, $filePath) {
-		return rename($tmp, $filePath);
+	public function handleUploadedFile($modelAlias, $field, $tmp, $filePath) {
+		return rename($tmp, $filePath) && $this->_chmod($filePath, $this->settings[$modelAlias][$field]['mask']);
 	}
 
 }

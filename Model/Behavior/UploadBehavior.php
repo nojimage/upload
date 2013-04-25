@@ -46,6 +46,7 @@ class UploadBehavior extends ModelBehavior {
 		'mediaThumbnailType'=> 'png',
 		'saveDir'			=> true,
 		'deleteFolderOnDelete' => false,
+		'mask' => 0666,
 );
 
 	protected $_imageMimetypes = array(
@@ -309,7 +310,9 @@ class UploadBehavior extends ModelBehavior {
 	}
 
 	public function handleUploadedFile($modelAlias, $field, $tmp, $filePath) {
-		return is_uploaded_file($tmp) && @move_uploaded_file($tmp, $filePath);
+		$result = is_uploaded_file($tmp) && @move_uploaded_file($tmp, $filePath);
+		$result = $result && $this->_chmod($filePath, $this->settings[$modelAlias][$field]['mask']);
+		return $result;
 	}
 
 	public function unlink($file) {
@@ -953,7 +956,7 @@ class UploadBehavior extends ModelBehavior {
 
 		$image->clear();
 		$image->destroy();
-		return true;
+		return $this->_chmod($destFile, $this->settings[$model->alias][$field]['mask']);
 	}
 
 	public function _resizePhp(Model $model, $field, $path, $size, $geometry, $thumbnailPath) {
@@ -1080,7 +1083,7 @@ class UploadBehavior extends ModelBehavior {
 				$outputHandler($img, $destFile);
 			}
 
-			return true;
+			return $this->_chmod($destFile, $this->settings[$model->alias][$field]['mask']);
 		}
 		return false;
 	}
@@ -1252,6 +1255,13 @@ class UploadBehavior extends ModelBehavior {
 				}
 			}
 		}
+	}
+
+	protected function _chmod($filename, $mode) {
+		if (!$mode) {
+			return false;
+		}
+		return @chmod($filename, $mode);
 	}
 
 	public function _isImage(Model $model, $mimetype) {
