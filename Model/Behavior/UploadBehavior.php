@@ -1000,6 +1000,7 @@ class UploadBehavior extends ModelBehavior {
 		}
 
 		$supportsThumbnailQuality = false;
+		$quality = $this->settings[$model->alias][$field]['thumbnailQuality'];
 		switch (strtolower($thumbnailType)) {
 			case 'gif':
 				$outputHandler = 'imagegif';
@@ -1012,9 +1013,9 @@ class UploadBehavior extends ModelBehavior {
 			case 'png':
 				$outputHandler = 'imagepng';
 				$supportsThumbnailQuality = true;
-				if ($this->settings[$model->alias][$field]['thumbnailQuality'] > 10) {
+				if ($quality > 10) {
 					// quality convert to 0-9
-					$this->settings[$model->alias][$field]['thumbnailQuality'] = floor((100 - $this->settings[$model->alias][$field]['thumbnailQuality']) / 100);
+					$quality = floor((100 - $quality) / 100);
 				}
 				break;
 			default:
@@ -1082,7 +1083,7 @@ class UploadBehavior extends ModelBehavior {
 			imagecopyresampled($img, $src, ($destW-$resizeW)/2, ($destH-$resizeH)/2, 0, 0, $resizeW, $resizeH, $srcW, $srcH);
 
 			if ($supportsThumbnailQuality) {
-				$outputHandler($img, $destFile, $this->settings[$model->alias][$field]['thumbnailQuality']);
+				$outputHandler($img, $destFile, $quality);
 			} else {
 				$outputHandler($img, $destFile);
 			}
