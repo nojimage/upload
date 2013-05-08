@@ -1012,6 +1012,10 @@ class UploadBehavior extends ModelBehavior {
 			case 'png':
 				$outputHandler = 'imagepng';
 				$supportsThumbnailQuality = true;
+				if ($this->settings[$model->alias][$field]['thumbnailQuality'] > 10) {
+					// quality convert to 0-9
+					$this->settings[$model->alias][$field]['thumbnailQuality'] = floor((100 - $this->settings[$model->alias][$field]['thumbnailQuality']) / 100);
+				}
 				break;
 			default:
 				return false;
