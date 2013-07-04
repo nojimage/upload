@@ -217,7 +217,7 @@ class UploadBehavior extends ModelBehavior {
 
 			$this->runtime[$model->alias][$field] = $model->data[$model->alias][$field];
 
-			$removing = isset($model->data[$model->alias][$field]['remove']);
+			$removing = !empty($model->data[$model->alias][$field]['remove']);
 			if ($removing || ($this->settings[$model->alias][$field]['deleteOnUpdate']
 			&& isset($model->data[$model->alias][$field]['name'])
 			&& strlen($model->data[$model->alias][$field]['name']))) {
@@ -283,7 +283,10 @@ class UploadBehavior extends ModelBehavior {
 			$tmp = $this->runtime[$model->alias][$field]['tmp_name'];
 			$filePath = $path . $model->data[$model->alias][$field];
 			if (!$this->handleUploadedFile($model->alias, $field, $tmp, $filePath)) {
-				$model->invalidate($field, 'Unable to move the uploaded file to '.$filePath);
+				CakeLog::error(sprintf('Model %s, Field %s: Unable to move the uploaded file to %s', $model->alias, $field, $filePath));
+				$model->invalidate($field, sprintf('Unable to move the uploaded file to %s', $filePath));
+				$db = $model->getDataSource();
+				$db->rollback();
 				throw new UploadException('Unable to upload file');
 			}
 
@@ -320,15 +323,20 @@ class UploadBehavior extends ModelBehavior {
 	}
 
 	public function deleteFolder($model, $path) {
+		if (!isset($this->__foldersToRemove[$model->alias])) {
+			return false;
+		}
+
 		$folders = $this->__foldersToRemove[$model->alias];
-		foreach ( $folders as $folder ) {
+		foreach ($folders as $folder) {
 			$dir = $path . $folder;
 			$it = new RecursiveDirectoryIterator($dir);
 			$files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-			foreach($files as $file) {
+			foreach ($files as $file) {
 				if ($file->getFilename() === '.' || $file->getFilename() === '..') {
 					continue;
 				}
+
 				if ($file->isDir()) {
 					@rmdir($file->getRealPath());
 				} else {
@@ -337,6 +345,8 @@ class UploadBehavior extends ModelBehavior {
 			}
 			@rmdir($dir);
 		}
+
+		return true;
 	}
 
 	public function beforeDelete(Model $model, $cascade = true) {
@@ -1000,7 +1010,7 @@ class UploadBehavior extends ModelBehavior {
 		}
 
 		$supportsThumbnailQuality = false;
-		$quality = $this->settings[$model->alias][$field]['thumbnailQuality'];
+		$adjustedThumbnailQuality = $this->settings[$model->alias][$field]['thumbnailQuality'];
 		switch (strtolower($thumbnailType)) {
 			case 'gif':
 				$outputHandler = 'imagegif';
@@ -1013,10 +1023,8 @@ class UploadBehavior extends ModelBehavior {
 			case 'png':
 				$outputHandler = 'imagepng';
 				$supportsThumbnailQuality = true;
-				if ($quality > 10) {
-					// quality convert to 0-9
-					$quality = floor((100 - $quality) / 100);
-				}
+				// convert 0 (lowest) - 100 (highest) thumbnailQuality, to 0 (highest) - 9 (lowest) quality (see http://php.net/manual/en/function.imagepng.php)
+				$adjustedThumbnailQuality = intval((100 - $this->settings[$model->alias][$field]['thumbnailQuality'])/100*9);
 				break;
 			default:
 				return false;
@@ -1083,7 +1091,7 @@ class UploadBehavior extends ModelBehavior {
 			imagecopyresampled($img, $src, ($destW-$resizeW)/2, ($destH-$resizeH)/2, 0, 0, $resizeW, $resizeH, $srcW, $srcH);
 
 			if ($supportsThumbnailQuality) {
-				$outputHandler($img, $destFile, $quality);
+				$outputHandler($img, $destFile, $adjustedThumbnailQuality);
 			} else {
 				$outputHandler($img, $destFile);
 			}
@@ -1252,6 +1260,9 @@ class UploadBehavior extends ModelBehavior {
 				} elseif (method_exists($this, $method)) {
 					$valid = $this->$method($model, $field, $path, $size, $geometry, $thumbnailPathSized);
 				} else {
+					CakeLog::error(sprintf('Model %s, Field %s: Invalid thumbnailMethod %s', $model->alias, $field, $filePath));
+					$db = $model->getDataSource();
+					$db->rollback();
 					throw new Exception("Invalid thumbnailMethod %s", $method);
 				}
 
