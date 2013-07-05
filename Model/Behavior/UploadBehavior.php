@@ -888,7 +888,7 @@ class UploadBehavior extends ModelBehavior {
 			$x = ($destW - $imageGeometry['width']) / 2;
 			$y = ($destH - $imageGeometry['height']) / 2;
 			$image->setGravity(Imagick::GRAVITY_CENTER);
-			$image->extentImage($destW, $destH, $x, $y);
+			$image->extentImage($destW, $destH, -$x, -$y);
 		} elseif (preg_match('/^[\\d]+x[\\d]+$/', $geometry)) {
 			// cropped resize (best fit)
 			list($destW, $destH) = explode('x', $geometry);
