@@ -40,8 +40,8 @@ class FileGrabberBehavior extends UploadBehavior {
  * Transform Model.field value like as PHP upload array (name, tmp_name)
  * for UploadBehavior plugin processing.
  */
-	public function beforeValidate(Model $model) {
-		foreach($this->settings[$model->alias] as $field => $options) {
+	public function beforeValidate(Model $model, $options = array()) {
+		foreach($this->settings[$model->alias] as $field => $option) {
 			$uri = $model->data[$model->alias][$field];
 			if (empty($model->data[$model->alias][$field])) {
 				continue;

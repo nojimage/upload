@@ -23,8 +23,8 @@ class FileImportBehavior extends UploadBehavior {
 		return true;
 	}
 
-	public function beforeValidate(Model $model) {
-		foreach ($this->settings[$model->alias] as $field => $options) {
+	public function beforeValidate(Model $model, $options = array()) {
+		foreach ($this->settings[$model->alias] as $field => $option) {
 			$filepath = $model->data[$model->alias][$field];
 			if (empty($model->data[$model->alias][$field])) {
 				continue;
