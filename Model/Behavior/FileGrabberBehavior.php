@@ -9,7 +9,9 @@ class FileGrabberBehavior extends UploadBehavior {
  */
 	protected function _grab(Model $model, $field, $uri) {
 
-		$socket = new HttpSocket();
+		$socket = new HttpSocket(array(
+			'ssl_verify_host' => false
+		));
 		$socket->get($uri);
 		$headers = $socket->response['header'];
 		$file_name = basename($socket->request['uri']['path']);
